@@ -52,31 +52,37 @@ print("%s: init preCICE..." % participantName)
 
 dt = interface.initialize()
 
-if participantName == "SolverOne":  # solver is of Dirichlet type.
-    data_one = np.array([-0.1])
-    data_two = np.array([0.1])
+N_val = 5
 
+if participantName == "SolverOne":
+    print("initializing %s" % participantName)
+    data_one = np.array([-0.1]) * np.ones(N_val)
+    data_two = np.array([0.1]) * np.ones(N_val)
+    print("pre write")
+    print(data_one)
     if interface.isActionRequired(PyActionWriteInitialData()):
-        interface.writeBlockScalarData(data_id_two, N, dataIndices, data_one)
+        interface.writeBlockVectorData(data_id_two, N, dataIndices, data_one)
         interface.fulfilledAction(PyActionWriteInitialData())
-
+    print("post write")
     interface.initializeData()
 
     if interface.isReadDataAvailable():
-        interface.readBlockScalarData(data_id_one, N, dataIndices, data_two)
+        interface.readBlockVectorData(data_id_one, N, dataIndices, data_two)
 
-elif participantName == "SolverTwo":  # solver is of Neumann type
-    data_one = np.array([-0.1])
-    data_two = np.array([0.1])
-
+elif participantName == "SolverTwo":
+    print("initializing %s" % participantName)
+    data_one = np.array([-0.1]) * np.ones(N_val)
+    data_two = np.array([0.1]) * np.ones(N_val)
+    print("pre write")
+    print(data_two)
     if interface.isActionRequired(PyActionWriteInitialData()):
-        interface.writeBlockScalarData(data_id_two, N, dataIndices, data_two)
+        interface.writeBlockVectorData(data_id_two, N, dataIndices, data_two)
         interface.fulfilledAction(PyActionWriteInitialData())
-
+    print("post write")
     interface.initializeData()
 
     if interface.isReadDataAvailable():
-        interface.readBlockScalarData(data_id_one, N, dataIndices, data_one)
+        interface.readBlockVectorData(data_id_one, N, dataIndices, data_one)
 else:
     raise Exception("unknown solver %s" % participantName)
 
@@ -102,9 +108,9 @@ while interface.isCouplingOngoing():
         print(data_two)
         print("###")
 
-        interface.writeBlockScalarData(data_id_one, N, dataIndices, data_one)
+        interface.writeBlockVectorData(data_id_one, N, dataIndices, data_one)
         dt = interface.advance(dt)
-        interface.readBlockScalarData(data_id_two, N, dataIndices, data_two)
+        interface.readBlockVectorData(data_id_two, N, dataIndices, data_two)
 
     elif participantName == "SolverTwo":
         data_two = np.copy(data_one**2)
@@ -114,9 +120,9 @@ while interface.isCouplingOngoing():
         print(data_two)
         print("###")
 
-        interface.writeBlockScalarData(data_id_two, N, dataIndices, data_two)
+        interface.writeBlockVectorData(data_id_two, N, dataIndices, data_two)
         dt = interface.advance(dt)
-        interface.readBlockScalarData(data_id_one, N, dataIndices, data_one)
+        interface.readBlockVectorData(data_id_one, N, dataIndices, data_one)
     else:
         raise Exception("unknown solver %s" % participantName)
 

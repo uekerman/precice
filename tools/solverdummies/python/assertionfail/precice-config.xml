@@ -8,8 +8,8 @@
 
   <solver-interface dimensions="2" >
    
-    <data:vector name="Forces"  />
-    <data:vector name="Velocities"  />
+    <data:scalar name="Forces"  />
+    <data:scalar name="Velocities"  />
 
     <mesh name="MeshOne">
       <use-data name="Forces" />
