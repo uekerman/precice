@@ -12,7 +12,27 @@ from distutils.command.build import build
 APPNAME = "PySolverInterface"
 
 PYTHON_BINDINGS_PATH = os.path.dirname(os.path.abspath(__file__))
-PRECICE_ROOT = os.path.join(PYTHON_BINDINGS_PATH, "../../../../../precice")
+PRECICE_ROOT = os.environ['PRECICE_ROOT']
+PRECICE_BUILD = os.environ['PRECICE_BUILD']
+PRECICE_MPI_COMPILER = os.environ['PRECICE_MPI_COMPILER']
+
+try:
+    os.chdir(PRECICE_ROOT)
+except TypeError:
+    print("The preCICE root directory is not defined. Have you set the $PRECICE_ROOT environment variable?")
+    sys.exit(1)
+except FileNotFoundError:
+    print("$PRECICE_ROOT directory does not exist. Please set the $PRECICE_ROOT environment variable to a valid directory.")
+    sys.exit(1)
+
+try:
+    os.chdir(PRECICE_BUILD)
+except TypeError:
+    print("The preCICE build directory is not defined. Have you set the $PRECICE_BUILD environment variable?")
+    sys.exit(1)
+except FileNotFoundError:
+    print("$PRECICE_BUILD directory does not exist. Please set the $PRECICE_BUILD environment variable to a valid directory.")
+    sys.exit(1)
 
 
 class MpiImplementations(Enum):
@@ -50,12 +70,12 @@ def determine_mpi_args(mpi_compiler_wrapper):
     return mpi_compile_args, mpi_link_args
 
 
-def get_extensions(mpi_compiler_wrapper):
+def get_extensions(mpi_compiler_wrapper, precice_buildfolder):
     mpi_compile_args, mpi_link_args = determine_mpi_args(mpi_compiler_wrapper)
 
     # need to include libs here, because distutils messes up the order
     compile_args = ["-I" + PRECICE_ROOT, "-Wall", "-std=c++11"] + mpi_compile_args
-    link_args = ["-L" + PRECICE_ROOT + "/build/last/", "-lprecice"] + mpi_link_args
+    link_args = ["-L" + precice_buildfolder, "-lprecice"] + mpi_link_args
 
     return [
         Extension(
@@ -69,83 +89,25 @@ def get_extensions(mpi_compiler_wrapper):
             )
     ]
 
-
-# some global definitions for an additional user input command
-doc_string = 'specify the mpi compiler wrapper'
-opt_name = 'mpicompiler='
-mpicompiler_default = "mpic++"
-add_option = [(opt_name, None, doc_string)]
-
-
-class my_build_ext(build_ext, object):
-    description = "building with optional specification of an alternative mpi compiler wrapper"
-    user_options = build_ext.user_options + add_option
-
-    def initialize_options(self):
-        self.mpicompiler = mpicompiler_default
-        super(my_build_ext, self).initialize_options()
-        
+class my_build_ext(build_ext, object):     
     def finalize_options(self):
-        print("#####")
-        print("calling my_build_ext")
-        print("using --%s%s" % (opt_name, self.mpicompiler))
-
         if not self.distribution.ext_modules:
             print("adding extension")
-            self.distribution.ext_modules = get_extensions(self.mpicompiler)
+            self.distribution.ext_modules = get_extensions(PRECICE_MPI_COMPILER, PRECICE_BUILD)
 
         print("#####")
-
         super(my_build_ext, self).finalize_options()
 
 
-class my_install(install, object):
-    user_options = install.user_options + add_option
-
-    def initialize_options(self):
-        self.mpicompiler = mpicompiler_default
-        super(my_install, self).initialize_options()
-
-
 class my_build(build, object):
-    user_options = install.user_options + add_option
-
-    def initialize_options(self):
-        self.mpicompiler = mpicompiler_default
-        super(my_build, self).initialize_options()
-
     def finalize_options(self):
-        print("#####")
-        print("calling my_build")
-        print("using --%s%s" % (opt_name, self.mpicompiler))
-
         if not self.distribution.ext_modules:
             print("adding extension")
-            self.distribution.ext_modules = get_extensions(self.mpicompiler)
+            self.distribution.ext_modules = get_extensions(PRECICE_MPI_COMPILER, PRECICE_BUILD)
 
         print("#####")
 
-        super(my_build, self).finalize_options()
-        
-
-mpi_compiler_wrapper = "mpic++"
-mpi_compile_args, mpi_link_args = determine_mpi_args(mpi_compiler_wrapper)
-
-# need to include libs here, because distutils messes up the order
-compile_args = ["-I" + PRECICE_ROOT, "-Wall", "-std=c++11"] + mpi_compile_args
-link_args = ["-L" + PRECICE_ROOT + "/build/last/", "-lprecice"] + mpi_link_args
-
-extensions = [
-    Extension(
-        APPNAME,
-        sources=[os.path.join(PYTHON_BINDINGS_PATH, APPNAME) + ".pyx"],
-        libraries=[],
-        include_dirs=[PRECICE_ROOT],
-        language="c++",
-        extra_compile_args=compile_args,
-        extra_link_args=link_args
-    )
-]
+        super(my_build, self).finalize_options()       
 
 
 # build precice.so python extension to be added to "PYTHONPATH" later
@@ -154,5 +116,5 @@ setup(
     description='Python language bindings for preCICE coupling library',
     cmdclass={'build_ext': my_build_ext,
               'build': my_build,
-              'install': my_install}
+              'install': install}
 )

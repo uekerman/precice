@@ -37,11 +37,11 @@ parser.add_argument('-r', '--removebuild', help="Remove build/ and .scon* files 
 parser.add_argument('-k', '--keeptest', help="Do not remove test directory for earch test run", dest='keep_test', action='store_true')
 parser.add_argument('-t', help="Run tests.", dest='run_tests', action="store_true")
 parser.add_argument('-j', help="Number of CPUs to compile on", dest='compile_cpus', default=4)
-parser.add_argument('-b', '--buildfolder', help="Specify build folder", default="build/last")
 parser.add_argument('-p', help="Number of MPI procs. Setting to 1 means to not use MPI at all. This does not affect the build process.", type=int, dest='mpi_procs', default=4)
 parser.add_argument("-s", "--split", help="Redirect output to a process-unique file testout.N", dest="split_output", action="store_true")
 parser.add_argument('--logconfig', "-l", help="Log config file", default = "")
 parser.add_argument('--root', help="preCICE Root, defaults to $PRECICE_ROOT", default = os.getenv("PRECICE_ROOT"))
+parser.add_argument('--build', help="preCICE build, defaults to $PRECICE_BUILD", default = os.getenv("PRECICE_BUILD"))
 parser.add_argument('--mpirun', help="mpirun executable", default = "mpirun")
 
 
@@ -60,11 +60,20 @@ except FileNotFoundError:
     print("$PRECICE_ROOT directory does not exist. Please set the $PRECICE_ROOT environment variable to a valid directory.")
     sys.exit(1)
 
+try:
+    os.chdir(args.build)
+except TypeError:
+    print("The preCICE build directory is not defined. Have you set the $PRECICE_BUILD environment variable?")
+    sys.exit(1)
+except FileNotFoundError:
+    print("$PRECICE_BUILD directory does not exist. Please set the $PRECICE_BUILD environment variable to a valid directory.")
+    sys.exit(1)
+
 if args.compile:
     if args.remove_build:
         print("Deleting build directory and scons caches...")
         try:
-            shutil.rmtree("./build")
+            shutil.rmtree(args.build)
             shutil.rmtree("./.sconf_temp")
             os.remove(".sconsign.dblite")
         except FileNotFoundError:
@@ -85,5 +94,5 @@ if args.run_tests:
         print("Copy", args.logconfig, "to tests/log.conf")
         shutil.copyfile(args.logconfig, "tests/log.conf")
 
-    run_cmd = "{mpi} ../{buildfolder}/testprecice --color_output {args}".format(mpi = mpi_cmd, args = " ".join(remainder), buildfolder = args.buildfolder)
+    run_cmd = "{mpi} {buildfolder}/testprecice --color_output {args}".format(mpi = mpi_cmd, args = " ".join(remainder), buildfolder = args.build)
     run_test(run_cmd)
