@@ -3,6 +3,8 @@
 #include "mesh/SharedPointer.hpp"
 #include "mapping/Mapping.hpp"
 
+#include "someFancyHEadder.hpp"
+
 namespace precice
 {
 namespace action
