@@ -37,7 +37,8 @@ public:
   virtual void acceptConnection(std::string const &acceptorName,
                                 std::string const &requesterName,
                                 std::string const &tag,
-                                int                acceptorRank) override;
+                                int                acceptorRank,
+                                int                rankOffset = 0) override;
 
   virtual void acceptConnectionAsServer(std::string const &acceptorName,
                                         std::string const &requesterName,
@@ -115,26 +116,6 @@ private:
   logging::Logger _log{"com::MPIDirectCommunication"};
 
   MPI_Comm _communicator;
-
-  /// Global communicator, as given by utils::Parallel::getDefaultComm().
-  MPI_Comm _globalCommunicator;
-
-  /// Communicator for communicator between process groups.
-  MPI_Comm _localCommunicator;
-
-  /**
-   * @brief Returns ID belonging to a group of processes.
-   *
-   * @pre Call exchangeGroupInformation.
-   */
-  int getGroupID(std::string const &accessorName);
-
-  /**
-   * @brief Returns rank of leading process of a group.
-   *
-   * @pre Call exchangeGroupInformation.
-   */
-  int getLeaderRank(std::string const &accessorName);
 };
 
 } // namespace com
